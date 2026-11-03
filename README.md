@@ -53,7 +53,7 @@ On top of the base port, it adds:
 tools/        Python / shell / C helper tools (no binaries)
 patches/      psxrecomp runtime patch + project CMake/game.toml patch
 mods-src/     nascar.demo-track mod (declarative psxrecomp mod package)
-launchers/    Play NASCAR Rumble.bat (fast) and (PGXP).bat
+launchers/    Play NASCAR Rumble.bat (fast), (PGXP).bat, NASCAR Rumble Settings.bat (key remap)
 docs/         step-by-step guides
 ```
 
@@ -92,7 +92,7 @@ NASCAR Rumble USA, SLUS-01068. The wizard checks the disc's hashes.
 
 **Does it support widescreen, controllers or fullscreen?**
 - **Fullscreen:** F11 or Alt+Enter.
-- **Controllers:** configure them in the psxrecomp launcher. Two players are supported.
+- **Key remapping and controllers:** run `NASCAR Rumble Settings.bat` and use the launcher's **Controls** page. Two players are supported.
 - **Resolution:** the internal resolution can be the monitor's resolution, 4x, 8x or 4K.
 - **Widescreen:** the build is 4:3.
 

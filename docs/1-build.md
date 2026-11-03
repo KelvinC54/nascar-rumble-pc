@@ -135,8 +135,21 @@ Copy `launchers\*.bat` to `C:\NascarPC\`. Then open each one and set `DISC=` to 
 Controls:
 
 - **F11 or Alt+Enter** toggles fullscreen.
-- **Keyboard:** X is Cross and Enter is Start.
-- **Gamepads** work through the launcher's input settings. Start the exe without `--no-launcher` to get the launcher UI.
+- **Keyboard (default):**
+
+  | Key | PS1 button |
+  |---|---|
+  | Arrows | D-pad / left stick |
+  | X, S, Z, A | Cross, Circle, Square, Triangle |
+  | Q, W, E, R | L1, R1, L2, R2 |
+  | Enter, Right Shift | Start, Select |
+
+- **Remap keys or set up a gamepad:** run `NASCAR Rumble Settings.bat`. It opens the psxrecomp launcher before the game:
+  1. Open the **Controls** page.
+  2. Click a button and press the new key. Each input can have a second key too.
+  3. Press **LAUNCH**.
+
+  The bindings are saved to `keybinds.ini` (keyboard) and `input.ini` (gamepad) in `build-nopgxp\`. Both Play bats use them, and the PGXP bat copies them into its own build before it starts. You can also edit `keybinds.ini` by hand, using SDL key names.
 
 ## 1.6 Install the demo-track mod (for guide 2)
 
