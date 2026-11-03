@@ -1,0 +1,17 @@
+title: NASCAR Rumble PC
+description: Play NASCAR Rumble (PS1) natively on Windows PC – free fan-made guide and tools to recompile the game from your own disc, with HD textures and 60 fps races. No game files included.
+url: https://kelvinc54.github.io
+baseurl: /nascar-rumble-pc
+lang: en
+theme: jekyll-theme-cayman
+logo: /img/social-preview.jpg
+image: /img/social-preview.jpg
+author: KelvinC54
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-relative-links
+  - jekyll-titles-from-headings
+relative_links:
+  enabled: true
+  collections: false

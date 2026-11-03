@@ -1,6 +1,18 @@
-# NASCAR Rumble on PC: native recompile toolkit
+# NASCAR Rumble PC: play the PS1 game natively on Windows with HD textures and 60 fps
 
-Tools, patches and step-by-step guides for running **NASCAR Rumble** (PlayStation, 2000, SLUS-01068) natively on Windows. It uses static recompilation ([psxrecomp](https://github.com/RetroPortingToolKit/psxrecomp)), not an emulator. On top of the base port it adds:
+**Play NASCAR Rumble (PlayStation, 2000) on PC.** This is not an emulator: the game is statically recompiled into a native Windows `.exe` with [psxrecomp](https://github.com/RetroPortingToolKit/psxrecomp). The repo gives you free tools, patches and step-by-step guides to build it from your own disc, with high-resolution rendering, an HD texture pack and smooth 60 fps races.
+
+📖 **Website and guide:** https://kelvinc54.github.io/nascar-rumble-pc/
+
+![NASCAR Rumble PC – original vs HD texture pack](docs/img/compare-full.jpg)
+
+| Original PS1 textures vs HD texture pack | |
+|---|---|
+| ![cliff comparison](docs/img/compare-cliff.jpg) | ![rocks comparison](docs/img/compare-rocks.jpg) |
+
+## Features
+
+On top of the base port, it adds:
 
 - **High resolution rendering.** 3D renders at your monitor's resolution or higher, with optional supersampling and perspective-correct texturing.
 - **An HD texture pack pipeline.** It pulls the original textures off *your* disc, captures how the game recolours them at runtime, upscales them (Real-ESRGAN plus Lanczos, with a quality gate), and writes a DuckStation-format pack.
@@ -53,6 +65,36 @@ C:\NascarPC\            <- git clone of this repo
   nascar-rumble-recomp\ <- generated game project + builds (step 1)
   disc-extract\  raw-blocks\  pack-work\   <- texture work (step 2)
 ```
+
+## FAQ
+
+**How do I play NASCAR Rumble on PC?**
+1. Dump your own NASCAR Rumble (USA) disc to `.bin`/`.cue`.
+2. Follow [guide 1](docs/1-build.md) to recompile it into a native Windows executable with psxrecomp.
+3. Start it with `Play NASCAR Rumble.bat`.
+
+No emulator or BIOS file is needed to play.
+
+**Is this an emulator like DuckStation or ePSXe?**
+No. The game's MIPS code is translated to C and compiled for x64, which makes it a native PC port. The runtime still handles PS1 graphics and sound, but there is no CPU emulation loop.
+
+**Does it have HD textures or a texture pack for NASCAR Rumble?**
+Yes, but you build it yourself from your disc with [guide 2](docs/2-hd-textures.md). It uses AI upscaling (Real-ESRGAN) for detailed surfaces like rock and cliffs and Lanczos for the rest. The HUD and menus stay native, because they look sharper that way.
+
+**Can I download the game or a ready-made exe here?**
+No, and please don't ask. This repo contains no game files. You need your own copy.
+
+**Does NASCAR Rumble run at 60 fps on PC?**
+Yes. The fast build (PGO, no PGXP) and the runtime patches took races on a low-end iGPU laptop from 10–16 fps to about 60 fps. See [performance notes](docs/3-performance.md).
+
+**Which version of the game is supported?**
+NASCAR Rumble USA, SLUS-01068. The wizard checks the disc's hashes.
+
+**Does it support widescreen, controllers or fullscreen?**
+- **Fullscreen:** F11 or Alt+Enter.
+- **Controllers:** configure them in the psxrecomp launcher. Two players are supported.
+- **Resolution:** the internal resolution can be the monitor's resolution, 4x, 8x or 4K.
+- **Widescreen:** the build is 4:3.
 
 ## Credits
 
