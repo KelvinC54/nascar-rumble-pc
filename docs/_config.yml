@@ -20,3 +20,5 @@ defaults:
       path: ""
     values:
       image: /img/social-preview.jpg
+webmaster_verifications:
+  google: LCL1nasvdV_f0hhkmDMs9Mc6NXLFm8jtuzpyrnKMswM
