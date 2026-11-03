@@ -1,0 +1,66 @@
+format_version = 4
+id = "nascar.demo-track"
+version = "1.0.0"
+name = "Demo Track Picker"
+author = "local"
+description = "Makes the attract-mode demo race a chosen location and track instead of a random one (used to capture HD texture dumps track by track)."
+resolver = "declarative"
+save_compatibility = "shared"
+
+[[target]]
+game_id = "SLUS-01068"
+
+[[feature]]
+id = "demo-track"
+name = "Fixed demo track"
+description = "Demo races always use the chosen location and track. The stock demo only picks from unlocked locations."
+group = "Developer"
+default_enabled = false
+
+[[option]]
+feature = "demo-track"
+id = "location"
+label = "Location"
+type = "integer"
+min = 0
+max = 7
+step = 1
+default = 0
+
+[[option]]
+feature = "demo-track"
+id = "track"
+label = "Track"
+type = "integer"
+min = 0
+max = 2
+step = 1
+default = 0
+
+# Location roll: rand() % (unlocked + 4) ends in `mfhi v1` (0x00001810).
+# Becomes `addiu v1, zero, <location>` (0x240300LL).
+[[patch]]
+feature = "demo-track"
+target = "main_exe"
+address = 0x80089568
+expected = "10 18 00 00"
+fields = [
+  { offset = 0, option = "location", encoding = "u8" },
+  { offset = 1, replace = "00" },
+  { offset = 2, replace = "03" },
+  { offset = 3, replace = "24" },
+]
+
+# Track roll: rand() % 3 ends in `subu v0, v0, v1` (0x00431023).
+# Becomes `addiu v0, zero, <track>` (0x240200TT).
+[[patch]]
+feature = "demo-track"
+target = "main_exe"
+address = 0x800895A8
+expected = "23 10 43 00"
+fields = [
+  { offset = 0, option = "track", encoding = "u8" },
+  { offset = 1, replace = "00" },
+  { offset = 2, replace = "02" },
+  { offset = 3, replace = "24" },
+]

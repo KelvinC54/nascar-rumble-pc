@@ -1,0 +1,22 @@
+# Everything game-derived or machine-local stays out of git
+toolchain/
+psxrecomp/
+nascar-rumble-recomp/
+disc-extract/
+raw-blocks/
+textures/
+pack-work*/
+upscaler/
+shots/
+*.bin
+*.cue
+*.iso
+*.exe
+*.dll
+*.log
+*.png
+*.profraw
+*.profdata
+samples*.txt
+__pycache__/
+/*.bat

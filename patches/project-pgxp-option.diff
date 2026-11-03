@@ -1,0 +1,36 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 867b4af..2d78d7f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -37,6 +37,11 @@ if(NOT IS_DIRECTORY "${PSX_PRELOADED_MODS}")
+     set(PSX_PRELOADED_MODS "NONE")
+ endif()
+ 
++option(NASCAR_PGXP "Build with PGXP geometry precision (costs ~25% CPU in races)" ON)
++if(NASCAR_PGXP)
++    set(_nascar_pgxp PGXP)
++endif()
++
+ psxrecomp_add_game_runtime(psx-runtime
+     PRELOADED_MODS_DIR "${PSX_PRELOADED_MODS}"
+     # ENABLE_NETPLAY_IF_PRESENT
+@@ -45,6 +50,7 @@ psxrecomp_add_game_runtime(psx-runtime
+     WINDOW_TITLE "NascarRumble Recompiled"
+     DEFAULT_GAME_CONFIG_PATH "game.toml"
+     MAX_PLAYERS 2
++    ${_nascar_pgxp}
+     # LAUNCHER_BOXART "${CMAKE_CURRENT_SOURCE_DIR}/launcher_assets/img/boxart.tga"
+     APP_ICON "${CMAKE_CURRENT_SOURCE_DIR}/assets/psxrecomp.ico"
+     # Committed game C (psxrecomp_cli.py generate; git add generated). Release
+diff --git a/game.toml b/game.toml
+index 7755285..ea720f0 100644
+--- a/game.toml
++++ b/game.toml
+@@ -42,6 +42,7 @@ overlay_cache = true
+ [video]
+ renderer = "opengl"
+ aspect_ratio = "4:3"
++internal_resolution = "display"
+ 
+ [controller]
+ default_mode = "digital"

@@ -1,0 +1,138 @@
+diff --git a/runtime/src/duckstation_texture_pack.cpp b/runtime/src/duckstation_texture_pack.cpp
+index 3ca48b1b..30b9c4c5 100644
+--- a/runtime/src/duckstation_texture_pack.cpp
++++ b/runtime/src/duckstation_texture_pack.cpp
+@@ -7,6 +7,7 @@
+ 
+ #include <algorithm>
+ #include <array>
++#include <bitset>
+ #include <atomic>
+ #include <cerrno>
+ #include <charconv>
+@@ -362,6 +363,9 @@ struct DuckTexturePack {
+     size_t queued_dumps = 0;
+     size_t snapshot_budget = kMaxSnapshots, rect_cache_limit = kMaxRectCache;
+     uint64_t revision = 1;
++    /* 64x64-word VRAM tiles any tracked rect may touch; rebuilt lazily after an add. */
++    std::bitset<128> occupancy;
++    bool occupancy_valid = false;
+     std::string lifecycle_error;
+     size_t ignored = 0, ambiguous = 0;
+     bool geometry_limit_reported = false, dump_limit_reported = false;
+@@ -402,7 +406,7 @@ uint64_t cached_hash(DuckTexturePack& p, const HdTextureDrawQuery& q, Rect r) {
+     const uint64_t value = duck_texture_hash_rect(q.vram, q.vram_word_count, r.x, r.y, r.w, r.h);
+     if (p.rect_cache_limit) {
+         if (p.rect_cache.size() >= p.rect_cache_limit) p.rect_cache.erase(p.rect_cache.begin());
+-        p.rect_cache.push_back({r, value, q.vram});
++        p.rect_cache.push_back({r, value, q.vram}); p.occupancy_valid = false;
+     }
+     return value;
+ }
+@@ -663,7 +667,7 @@ bool record_usage(DuckTexturePack& p, Source& source, Rect global, const HdTextu
+         }
+     }
+     if (p.palette_records >= kMaxPaletteRecords) { p.lifecycle_error = "palette record budget exhausted"; return false; }
+-    source.records.push_back(std::move(current)); ++p.palette_records;
++    source.records.push_back(std::move(current)); ++p.palette_records; p.occupancy_valid = false;
+     source.dump_dirty = true;
+     return true;
+ }
+@@ -837,6 +841,32 @@ void duck_texture_pack_invalidate(DuckTexturePack* p, uint16_t x, uint16_t y, ui
+         for (const auto& r : regions) if (r.w && r.h && intersects(x,r)) return true;
+         return false;
+     };
++    const auto tiles = [](const Rect& r, const auto& visit) {
++        if (!r.w || !r.h) return;
++        const unsigned x1 = std::min(r.x + r.w - 1, 1023u) / 64, y1 = std::min(r.y + r.h - 1, 511u) / 64;
++        for (unsigned ty = std::min(r.y, 511u) / 64; ty <= y1; ++ty)
++            for (unsigned tx = std::min(r.x, 1023u) / 64; tx <= x1; ++tx) visit(ty * 16 + tx);
++    };
++    if (!p->occupancy_valid) {
++        p->occupancy.reset();
++        const auto mark = [&](const Rect& r) { tiles(r, [&](unsigned t) { p->occupancy.set(t); }); };
++        for (const auto& upload : p->uploads) mark(upload.active);
++        for (const auto& page : p->pages) {
++            mark(page.source->rect);
++            for (const auto& record : page.source->records)
++                if (record.depth < 2) mark({record.clut_x,record.clut_y,record.palette_size,1});
++        }
++        for (const auto& v : p->rect_cache) mark(v.rect);
++        for (const auto& c : p->match_cache) {
++            const auto& q = c.query;
++            mark({q.page_x,q.page_y,256 / expansion(q.depth),256});
++            if (q.depth < 2) mark({q.clut_x,q.clut_y,std::min(q.depth == 0 ? 16u : 256u,1024u-q.clut_x),1});
++        }
++        p->occupancy_valid = true;
++    }
++    bool maybe = false;
++    for (const auto& r : regions) tiles(r, [&](unsigned t) { maybe |= p->occupancy.test(t); });
++    if (!maybe) return;
+     bool hit = false;
+     for (const auto& upload : p->uploads) if (touches(upload.active)) { hit = true; break; }
+     if (!hit) for (const auto& page : p->pages) {
+@@ -940,6 +970,7 @@ int duck_texture_pack_copy_tracking(DuckTexturePack* destination, const DuckText
+         destination->copy_updates.clear(); destination->copy_pending = false;
+         destination->rect_cache.clear();
+         destination->match_cache.clear();
++        destination->occupancy_valid = false;
+         ++destination->revision;
+         return 1;
+     } catch (...) { return 0; }
+@@ -960,12 +991,12 @@ int duck_texture_pack_track_upload(DuckTexturePack* p, uint16_t x, uint16_t y, u
+                 p->uploads.pop_back(); retire_unused(*p);
+                 auto merged = capture_source(*p,combined,vram,DUCK_TEXTURE_UPLOAD);
+                 if (!merged) return 0;
+-                p->uploads.push_back({merged,combined,0}); p->match_cache.clear(); return 1;
++                p->uploads.push_back({merged,combined,0}); p->match_cache.clear(); p->occupancy_valid = false; return 1;
+             }
+         }
+         auto captured = capture_source(*p,written,vram,DUCK_TEXTURE_UPLOAD);
+         if (!captured) return 0;
+-        p->uploads.push_back({captured,written,0});
++        p->uploads.push_back({captured,written,0}); p->occupancy_valid = false;
+         p->match_cache.clear(); return 1;
+     } catch (...) { return 0; }
+ }
+@@ -998,7 +1029,7 @@ int duck_texture_pack_end_copy(DuckTexturePack* p, const uint16_t* vram, size_t
+         for (const auto& update : p->copy_updates) {
+             auto replacement = capture_source(*p,update.original,vram,DUCK_TEXTURE_UPLOAD);
+             if (!replacement) { p->copy_updates.clear(); return 0; }
+-            p->uploads.push_back({replacement,update.active,update.splits});
++            p->uploads.push_back({replacement,update.active,update.splits}); p->occupancy_valid = false;
+         }
+         p->copy_updates.clear(); p->match_cache.clear(); ++p->revision;
+         return 1;
+@@ -1121,7 +1152,7 @@ int duck_texture_pack_match_parts(DuckTexturePack* p, const HdTextureDrawQuery*
+             return a.clip_u < b.clip_u;
+         });
+         if (p->match_cache.size() >= 256) p->match_cache.erase(p->match_cache.begin());
+-        p->match_cache.push_back({*q,st != 0,status,parts});
++        p->match_cache.push_back({*q,st != 0,status,parts}); p->occupancy_valid = false;
+         if (parts.size() > capacity) return HD_TEXTURE_LOOKUP_ERROR;
+         std::copy(parts.begin(),parts.end(),output); *out_count = parts.size();
+         return status;
+@@ -1295,7 +1326,7 @@ int duck_texture_pack_dump_draw(DuckTexturePack* p, const HdTextureDrawQuery* q,
+             if (existing != p->pages.end()) source = existing->source;
+             else {
+                 source = capture_source(*p,page,q->vram,DUCK_TEXTURE_PAGE);
+-                if (source) p->pages.push_back({source,q->depth,q->clut_x,q->clut_y});
++                if (source) { p->pages.push_back({source,q->depth,q->clut_x,q->clut_y}); p->occupancy_valid = false; }
+             }
+             if (source) changed = record_usage(*p,*source,rect,*q,st != 0);
+         }
+diff --git a/runtime/src/gpu_hd_textures.cpp b/runtime/src/gpu_hd_textures.cpp
+index 5430dfb3..92161c99 100644
+--- a/runtime/src/gpu_hd_textures.cpp
++++ b/runtime/src/gpu_hd_textures.cpp
+@@ -600,7 +600,9 @@ static int acquire_draw(uint16_t tp, uint16_t cx, uint16_t cy,
+             if (duck_texture_pack_match_parts(session->duck, &query, semi, matches.data(), matches.size(), &count) != HD_TEXTURE_LOOKUP_FOUND || !count) return 0;
+             ++session->diag.matched_draws;
+             const auto& match = matches[0];
+-            if (count == 1 && match.clip_u <= query.u_first && match.clip_v <= query.v_first &&
++            /* matches[0] is the largest part. When it alone covers the draw, the
++             * other parts only overlap it, so skip the per-draw composition. */
++            if (match.clip_u <= query.u_first && match.clip_v <= query.v_first &&
+                 match.clip_u + match.clip_width > query.u_last && match.clip_v + match.clip_height > query.v_last) {
+                 /* The GPU copy outlives the decoder's smaller CPU LRU. A draw
+                  * using that copy must not queue another PNG decode. */
