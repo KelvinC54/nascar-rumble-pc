@@ -84,18 +84,18 @@ python tools/compare_sheet.py pack-work compare.png 8     # optional: nearest | 
 P=nascar-rumble-recomp/build-release/mods/texture-packs/SLUS-01068-hd
 mkdir -p $P
 python tools/build_pack.py finalize pack-work $P/replacements \
-  --resample lanczos --ai-gate 0.85 --scale 2 --merge --skip-ui
+  --resample lanczos --ai-gate 0.5 --scale 2 --merge --skip-ui
 ```
 
 | Flag | Effect |
 |---|---|
 | `--resample lanczos` | Lanczos for pages without an AI result, or that fail the gate |
-| `--ai-gate 0.85` | Use AI only when it kept at least 85% of the high-frequency detail (good pages score 0.7–0.95, smeared ones 0.2–0.35) |
+| `--ai-gate 0.5` | Use AI only when it kept at least 50% of the high-frequency detail. About two thirds of the pages pass, which makes cars, rock and cliffs visibly sharper. Some foliage comes out a bit painted. `0.85` is a cautious setting: only about 20% of pages use AI and the pack looks almost like the original in game. |
 | `--scale 2` | Downscale the output to 2× (keeps the pack under the 512 MiB preload cap) |
 | `--merge` | One entry per texture+palette (no per-draw compositing). Groups with unseen palette colours are left unmerged. |
 | `--skip-ui` | Leave the HUD, frontend and VRAM-built text native |
 
-The result is about 3,100 PNGs and about 120 MB.
+The result is about 3,100 PNGs (about 2,060 AI and 1,010 Lanczos) and about 110 MB.
 
 ## 2.5 Enable the pack
 
